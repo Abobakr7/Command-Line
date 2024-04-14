@@ -1,0 +1,3 @@
+app\cli\CLI.class
+app\cli\Terminal.class
+app\cli\Parser.class
