@@ -29,6 +29,11 @@ public class Terminal {
             case "echo" -> this.echo(args);
             case "pwd" -> this.pwd();
             case "cd" -> this.cd(args);
+            case "ls" -> this.ls(args);
+            case "mkdir" -> this.mkdir(args);
+            case "rmdir" -> this.rmdir(args);
+            case "touch" -> this.touch(args);
+            case "history" -> this.history();
             default -> {
                 System.out.println(commandName + " is not a command.");
             }
@@ -137,7 +142,62 @@ public class Terminal {
     }
     
 //    rmdir
+    private void rmdirHelper() {
+        File dir = new File(this.currPath.toAbsolutePath().toString());
+        File[] files = dir.listFiles();
+        if (files == null) {
+            System.out.println("There is no empty directories"); return;
+        }
+
+        for (int i = 0; i < files.length; ++i) {
+            if (files[i].isDirectory() && files[i].list().length == 0) {
+                files[i].delete();
+            }
+        }
+    }
+    
+    public void rmdir(String[] args) {
+        if (args.length == 0) {
+            System.out.println("The syntax of the command is incorrect"); return;
+        }
+
+        if (args[0].equals("*")) {
+            rmdirHelper();
+        }
+        else {
+            File f1 = new File(args[0]);
+            if (!f1.isAbsolute()) {
+                f1 = new File(this.currPath.toAbsolutePath().toString() + "\\" + args[0]);
+            }
+            if (!f1.exists()) {
+                System.out.println("The system cannot find the file specified."); return;
+            }
+            if (!f1.isDirectory()) {
+                System.out.println("The directory name is invalid."); return;
+            }
+            if (!f1.delete()) {
+                System.out.println("The directory is not empty.");
+            }
+        }
+    }
+    
 //    touch
+    public void touch(String[] args) {
+        if (args.length == 0) {
+            System.out.println("no file names given");
+            return;
+        }
+        
+        for (String arg : args) {
+            Path file = this.currPath.resolve(arg);
+            try {
+                Files.createFile(file);
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
+    }
+    
 //    cp
 //    cp -r
 //    rm
@@ -146,5 +206,9 @@ public class Terminal {
 //    >
 //    >>
 //    history
-//    exit
+    public void history() {
+        for (int i = 0; i < this.commands.size(); ++i) {
+            System.out.println(i+1 + " " + this.commands.get(i));
+        }
+    }
 }
