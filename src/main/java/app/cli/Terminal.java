@@ -3,9 +3,9 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
-import java.util.ArrayList;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Scanner;
 
@@ -62,18 +62,15 @@ public class Terminal {
         in.close();
     }
 
-//    echo
     public void echo(String[] args) {
         String sentence = String.join(" ", args);
         System.out.println(sentence);
     }
     
-//    pwd
     public void pwd() {
         System.out.println(this.currPath.toString());
     }
     
-//    cd
     public void cd(String[] args) {
         if (args.length == 0) {
             this.pwd();
@@ -89,7 +86,6 @@ public class Terminal {
         }
     }
     
-//    ls && ls -r
     public void ls(String[] args) {
         ArrayList<Path> files = new ArrayList<>();
         try (DirectoryStream<Path> dirStream = Files.newDirectoryStream(this.currPath)) {
@@ -113,7 +109,6 @@ public class Terminal {
         }
     }
     
-//    mkdir
     private void mkdirHelper(String folder) {
         File f1 = new File(folder);
         if (!f1.isAbsolute()) {
@@ -141,7 +136,6 @@ public class Terminal {
         }
     }
     
-//    rmdir
     private void rmdirHelper() {
         File dir = new File(this.currPath.toAbsolutePath().toString());
         File[] files = dir.listFiles();
@@ -181,7 +175,6 @@ public class Terminal {
         }
     }
     
-//    touch
     public void touch(String[] args) {
         if (args.length == 0) {
             System.out.println("no file names given");
@@ -192,8 +185,8 @@ public class Terminal {
             Path file = this.currPath.resolve(arg);
             try {
                 Files.createFile(file);
-            } catch (Exception e) {
-                e.printStackTrace();
+            } catch (IOException e) {
+                System.out.println(e);
             }
         }
     }
@@ -205,7 +198,7 @@ public class Terminal {
 //    wc
 //    >
 //    >>
-//    history
+
     public void history() {
         for (int i = 0; i < this.commands.size(); ++i) {
             System.out.println(i+1 + " " + this.commands.get(i));
