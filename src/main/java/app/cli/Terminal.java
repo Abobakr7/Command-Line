@@ -33,6 +33,8 @@ public class Terminal {
             case "mkdir" -> this.mkdir(args);
             case "rmdir" -> this.rmdir(args);
             case "touch" -> this.touch(args);
+            case "cat" -> this.cat(args);
+            case "wc" -> this.wc(args);
             case "history" -> this.history();
             default -> {
                 System.out.println(commandName + " is not a command.");
@@ -194,8 +196,66 @@ public class Terminal {
 //    cp
 //    cp -r
 //    rm
-//    cat
-//    wc
+    
+    private void catHelper(String fileName) {
+        Path filePath = this.currPath.resolve(fileName);
+        if (!Files.exists(filePath)) {
+            System.out.println("cat: " + fileName + ": No such file or directory."); return;
+        }
+        
+        File f1 = new File(filePath.toString());
+        if (!f1.isFile()) {
+            System.out.println("cat: " + fileName + ": No such a file"); return;
+        }
+        try (Scanner sc = new Scanner(f1)) {
+            while (sc.hasNextLine()) {
+                String line = sc.nextLine();
+                System.out.println(line);
+            }
+        } catch (IOException e) {
+            System.out.println(e);
+        }
+    }
+    
+    public void cat(String[] args) {
+        if (args.length == 0) {
+            System.out.println("No arguments were provided"); return;
+        }
+        int size = args.length <= 2 ? args.length : 2;
+        for (int i = 0; i < size; ++i) {
+            catHelper(args[i]);
+        }
+    }
+    
+    public void wc(String[] args) {
+        if (args.length == 0) {
+            System.out.println("No arguments were provided"); return;
+        }
+        
+        Path filePath = this.currPath.resolve(args[0]);
+        if (!Files.exists(filePath)) {
+            System.out.println("wc: " + args[0] + ": No such file or directory"); return;
+        }
+        
+        File fl = new File(filePath.toString());
+        if (!fl.isFile()) {
+            System.out.println("wc: " + args[0] + ": No such file"); return;            
+        }
+        
+        int linesCount = 0, wordCount = 0, charCount = 0;
+        try (Scanner sc = new Scanner(fl)) {
+            while (sc.hasNextLine()) {
+                String line = sc.nextLine();
+                linesCount += 1;
+                wordCount += line.split("\\s+").length;
+                charCount += line.toCharArray().length;
+            }
+        } catch (IOException e) {
+            System.out.println(e);
+        }
+        System.out.println(linesCount + " " + wordCount + " " + charCount + " " + args[0]);
+    }
+    
 //    >
 //    >>
 
