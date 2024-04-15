@@ -33,6 +33,7 @@ public class Terminal {
             case "mkdir" -> this.mkdir(args);
             case "rmdir" -> this.rmdir(args);
             case "touch" -> this.touch(args);
+            case "rm" -> this.rm(args);
             case "cat" -> this.cat(args);
             case "wc" -> this.wc(args);
             case "history" -> this.history();
@@ -43,25 +44,25 @@ public class Terminal {
     }
     
     public void launch() {
-        Scanner in = new Scanner(System.in);
-        String commandLine;
-        boolean flag;
-        
-        System.out.println("Terminal Starts Here.");
-        while(true) {
-            do {
-                System.out.print(">> ");
-                commandLine = in.nextLine();
-                flag = this.parser.parse(commandLine);
-            } while(!flag);
+        try (Scanner in = new Scanner(System.in)) {
+            String commandLine;
+            boolean flag;
             
-            if (this.parser.getCommandName().equals("exit")) {
-                break;
+            System.out.println("Terminal Starts Here.");
+            while(true) {
+                do {
+                    System.out.print(">> ");
+                    commandLine = in.nextLine();
+                    flag = this.parser.parse(commandLine);
+                } while(!flag);
+                
+                if (this.parser.getCommandName().equals("exit")) {
+                    break;
+                }
+                
+                this.chooseCommandAction();
             }
-            
-            this.chooseCommandAction();   
         }
-        in.close();
     }
 
     public void echo(String[] args) {
@@ -179,7 +180,7 @@ public class Terminal {
     
     public void touch(String[] args) {
         if (args.length == 0) {
-            System.out.println("no file names given");
+            System.out.println("no file names were provided");
             return;
         }
         
@@ -195,7 +196,27 @@ public class Terminal {
     
 //    cp
 //    cp -r
-//    rm
+
+    public void rm(String[] args) {
+        if (args.length == 0) {
+            System.out.println("No file names were provided"); return;
+        }
+        
+        Path filePath = this.currPath.resolve(args[0]);
+        if (!Files.exists(filePath)) {
+            System.out.println("rm: " + args[0] + ": No such file"); return;
+        }
+        
+        File fl = new File(filePath.toString());
+        if (!fl.isFile()) {
+            System.out.println("rm: " + args[0] + ": No such file"); return;
+        }
+        try {
+            Files.delete(filePath);
+        } catch(IOException e) {
+            System.out.println(e);
+        }
+    }
     
     private void catHelper(String fileName) {
         Path filePath = this.currPath.resolve(fileName);
@@ -219,7 +240,7 @@ public class Terminal {
     
     public void cat(String[] args) {
         if (args.length == 0) {
-            System.out.println("No arguments were provided"); return;
+            System.out.println("No file names were provided"); return;
         }
         int size = args.length <= 2 ? args.length : 2;
         for (int i = 0; i < size; ++i) {
@@ -229,7 +250,7 @@ public class Terminal {
     
     public void wc(String[] args) {
         if (args.length == 0) {
-            System.out.println("No arguments were provided"); return;
+            System.out.println("No file names were provided"); return;
         }
         
         Path filePath = this.currPath.resolve(args[0]);
