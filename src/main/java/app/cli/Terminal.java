@@ -1,5 +1,6 @@
 package app.cli;
 import java.io.File;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
@@ -24,19 +25,20 @@ public class Terminal {
         String commandName = this.parser.getCommandName();
         String[] args = this.parser.getArgs();
         this.commands.add(this.parser.getCommandLine());
-
+        int pipeType = this.checkPiping(args);
+        
         switch(commandName) {
-            case "echo" -> this.echo(args);
-            case "pwd" -> this.pwd();
+            case "echo" -> this.echo(args, pipeType);
+            case "pwd" -> this.pwd(pipeType);
             case "cd" -> this.cd(args);
-            case "ls" -> this.ls(args);
+            case "ls" -> this.ls(args, pipeType);
             case "mkdir" -> this.mkdir(args);
             case "rmdir" -> this.rmdir(args);
             case "touch" -> this.touch(args);
             case "rm" -> this.rm(args);
             case "cat" -> this.cat(args);
-            case "wc" -> this.wc(args);
-            case "history" -> this.history();
+            case "wc" -> this.wc(args, pipeType);
+            case "history" -> this.history(args, pipeType);
             default -> {
                 System.out.println(commandName + " is not a command.");
             }
@@ -59,24 +61,36 @@ public class Terminal {
                 if (this.parser.getCommandName().equals("exit")) {
                     break;
                 }
-                
                 this.chooseCommandAction();
             }
         }
     }
 
-    public void echo(String[] args) {
-        String sentence = String.join(" ", args);
-        System.out.println(sentence);
+    public void echo(String[] args, int pipeType) {
+        if (pipeType == -1) {
+            String sentence = String.join(" ", args);
+            System.out.println(sentence);
+            return;
+        }
+        
+        String[] strArr = new String[args.length - 2];
+        System.arraycopy(args, 0, strArr, 0, args.length - 2);
+        boolean isAppend = pipeType != 1;
+        String fileName = args[args.length - 1], content = String.join(" ", strArr);
+        this.piping(content, fileName, isAppend);
     }
     
-    public void pwd() {
-        System.out.println(this.currPath.toString());
+    public void pwd(int pipeType) {
+        if (pipeType == -1) {        
+            System.out.println(this.currPath.toString());
+        } else {
+            this.piping(this.currPath.toString(), this.parser.getArgs()[0], pipeType != 1);
+        }
     }
     
     public void cd(String[] args) {
         if (args.length == 0) {
-            this.pwd();
+            this.pwd(-1);
             return;
         }
         
@@ -89,7 +103,7 @@ public class Terminal {
         }
     }
     
-    public void ls(String[] args) {
+    public void ls(String[] args, int pipeType) {
         ArrayList<Path> files = new ArrayList<>();
         try (DirectoryStream<Path> dirStream = Files.newDirectoryStream(this.currPath)) {
             for (Path file : dirStream) {
@@ -107,8 +121,15 @@ public class Terminal {
             Collections.reverse(files);
         }
         
+        String content = "";
         for (Path file : files) {
-            System.out.println(file.getFileName());
+           content += file.getFileName() + "\n";
+        }
+        
+        if (pipeType == -1) {
+            System.out.println(content);
+        } else {
+            this.piping(content, args[args.length - 1], pipeType != 1);
         }
     }
     
@@ -248,7 +269,7 @@ public class Terminal {
         }
     }
     
-    public void wc(String[] args) {
+    public void wc(String[] args, int pipeType) {
         if (args.length == 0) {
             System.out.println("No file names were provided"); return;
         }
@@ -274,15 +295,49 @@ public class Terminal {
         } catch (IOException e) {
             System.out.println(e);
         }
-        System.out.println(linesCount + " " + wordCount + " " + charCount + " " + args[0]);
+        String content = linesCount + " " + wordCount + " " + charCount + " " + args[0];
+        if (pipeType == -1) {
+            System.out.println(content);
+        } else {
+            this.piping(content, args[args.length - 1], pipeType != 1);
+        }
     }
     
-//    >
-//    >>
+    private int checkPiping(String[] args) {
+        int i = args.length - 1;
+        for (; i >= 0; --i) {
+            if (args[i].equals(">")) {
+                return 1;
+            } else if (args[i].equals(">>")) {
+                return 2;
+            }
+        }
+        
+        return -1;
+    }
+    
+    private void piping(String content, String fileName, boolean isAppend) {
+        if (fileName.equals(">") || fileName.equals(">>")) {
+            System.out.println("No file names were provided"); return;
+        }
+        
+        String filePath = this.currPath.resolve(fileName).toString();
+        try (FileWriter fw = new FileWriter(filePath, isAppend);) {
+            fw.write(content + "\n");
+        } catch (IOException e) {
+            System.out.println(e);
+        }  
+    }
 
-    public void history() {
+    public void history(String[] args, int pipeType) {
+        String content = "";
         for (int i = 0; i < this.commands.size(); ++i) {
-            System.out.println(i+1 + " " + this.commands.get(i));
+            content += i+1 + " " + this.commands.get(i) + (i != this.commands.size() - 1 ? "\n" : "");
+        }
+        if (pipeType == -1) {
+            System.out.println(content);
+        } else {
+            this.piping(content, args[args.length - 1], pipeType != 1);
         }
     }
 }
