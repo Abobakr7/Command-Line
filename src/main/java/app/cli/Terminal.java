@@ -3,9 +3,13 @@ import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.nio.file.DirectoryStream;
+import java.nio.file.FileVisitResult;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.nio.file.SimpleFileVisitor;
+import java.nio.file.StandardCopyOption;
+import java.nio.file.attribute.BasicFileAttributes;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Scanner;
@@ -35,6 +39,7 @@ public class Terminal {
             case "mkdir" -> this.mkdir(args);
             case "rmdir" -> this.rmdir(args);
             case "touch" -> this.touch(args);
+            case "cp" -> this.cp(args);
             case "rm" -> this.rm(args);
             case "cat" -> this.cat(args);
             case "wc" -> this.wc(args, pipeType);
@@ -215,8 +220,51 @@ public class Terminal {
         }
     }
     
-//    cp
-//    cp -r
+    private void copyContent(Path source, Path destination){
+        try {
+            Files.walkFileTree(source, new SimpleFileVisitor<Path>() {
+                @Override
+                public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs) throws IOException {
+                    Path targetDir = destination.resolve(source.relativize(dir));
+                    Files.createDirectories(targetDir);
+                    return FileVisitResult.CONTINUE;
+                }
+
+                @Override
+                public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
+                    Files.copy(file, destination.resolve(source.relativize(file)), StandardCopyOption.REPLACE_EXISTING);
+                    return FileVisitResult.CONTINUE;
+                }
+            });
+        } catch (IOException e) {
+            System.out.println("No such file or directory.");
+        }
+    }
+    
+    public void cp(String[] args) {
+        if (args.length == 0 || args.length == 1) {
+            System.out.println("cp: missing file operand"); return;
+        } else if (args[0].equals("-r") && args.length < 3) {
+            System.out.println("cp: missing destination file operand"); return;
+        }
+        
+        boolean thereArg = false;
+        if (args[0].equals("-r")) thereArg = true;
+        
+        Path srcPath = null, destPath = null;
+        if (!thereArg) {
+            srcPath = this.currPath.resolve(args[0]);
+            destPath = this.currPath.resolve(args[1]);
+            if (Files.isDirectory(srcPath) || Files.isDirectory(destPath)) {
+                System.out.println("cp: -r not specified for directories");
+                return;
+            }
+        } else {
+            srcPath = this.currPath.resolve(args[1]);
+            destPath = this.currPath.resolve(args[2]);
+        }
+        this.copyContent(srcPath, destPath);
+    }
 
     public void rm(String[] args) {
         if (args.length == 0) {
